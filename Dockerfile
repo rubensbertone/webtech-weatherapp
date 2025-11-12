@@ -6,7 +6,7 @@ RUN chmod +x ./gradlew
 
 RUN ./gradlew bootJar -x test --no-daemon
 
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 WORKDIR /app
 
 COPY --from=build /home/gradle/project/build/libs/*.jar app.jar
