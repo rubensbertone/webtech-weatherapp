@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@CrossOrigin(origins = {"https://weatherapp-frontend-orzv.onrender.com"})
+@CrossOrigin(origins = {"https://weatherapp-frontend-orzv.onrender.com", "http://localhost:5173"})
 public class FavoriteLocationController {
 
     @GetMapping("/favoriteLocations")
