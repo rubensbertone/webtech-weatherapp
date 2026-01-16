@@ -1,3 +1,4 @@
+
 package com.example.demo;
 
 import org.springframework.context.annotation.Bean;
@@ -34,7 +35,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/register").permitAll()
 
-                        .requestMatchers("/favorite-locations", "/favorite-locations/**").authenticated()
+                        .requestMatchers("/favoriteLocations", "/favoriteLocations/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
 
                         .anyRequest().permitAll()
@@ -54,7 +55,7 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:4200",
                 "http://localhost:5173",
-                "https://weatherapp-frontend-orzv.onrender.com/"
+                "https://weatherapp-frontend-orzv.onrender.com"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
