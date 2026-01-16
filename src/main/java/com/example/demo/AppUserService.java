@@ -20,6 +20,10 @@ public class AppUserService implements UserDetailsService {
     private PasswordEncoder passwordEncoder;
 
     public AppUser registerUser(String username, String password) {
+        if (repo.findByUsername(username).isPresent()) {
+            throw new IllegalArgumentException("Benutzername bereits vorhanden");
+        }
+
         String encodedPassword = passwordEncoder.encode(password);
         return repo.save(new AppUser(username, encodedPassword));
     }
@@ -27,7 +31,7 @@ public class AppUserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         AppUser user = repo.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
         return new User(user.getUsername(), user.getPassword(), Collections.emptyList());
     }
