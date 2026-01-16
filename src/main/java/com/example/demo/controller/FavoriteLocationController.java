@@ -1,6 +1,6 @@
+package com.example.demo.controller;
 
-package com.example.demo;
-
+import com.example.demo.FavoriteLocation;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
