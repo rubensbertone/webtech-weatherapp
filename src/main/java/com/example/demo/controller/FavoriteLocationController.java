@@ -1,24 +1,38 @@
 package com.example.demo.controller;
 
+import com.example.demo.AppUser;
+import com.example.demo.AppUserRepository;
 import com.example.demo.FavoriteLocation;
+import com.example.demo.FavoriteLocationRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequestMapping("/favoriteLocations")
 public class FavoriteLocationController {
 
-    @GetMapping("/favoriteLocations")
-    public List<FavoriteLocation> getFavoriteLocations(Authentication authentication) {
-        String username = authentication.getName();
-        System.out.println("User " + username + " accessing favorite locations");
+    @Autowired
+    private FavoriteLocationRepository favoriteLocationRepository;
 
-        return List.of(
-                new FavoriteLocation("Oslo", "Norway", 59.9139, 10.7522),
-                new FavoriteLocation("Stockholm", "Sweden", 59.330232, 18.068381),
-                new FavoriteLocation("Copenhagen", "Denmark", 55.676111, 12.568056)
-        );
+    @Autowired
+    private AppUserRepository appUserRepository;
+
+    @GetMapping
+    public List<FavoriteLocation> getFavorites(Authentication authentication) {
+        String username = authentication.getName();
+        return favoriteLocationRepository.findByAppUserUsername(username);
+    }
+
+    @PostMapping
+    public FavoriteLocation addFavorite(@RequestBody FavoriteLocation location, Authentication authentication) {
+        String username = authentication.getName();
+        AppUser user = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        location.setAppUser(user);
+        return favoriteLocationRepository.save(location);
     }
 }
