@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/weather/places/search").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/weather/details").permitAll()
 
                         .requestMatchers("/favoriteLocations", "/favoriteLocations/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
