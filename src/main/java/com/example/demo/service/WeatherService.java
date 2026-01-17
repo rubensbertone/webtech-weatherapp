@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson. databind.JsonNode;
 import com.fasterxml.jackson. databind.ObjectMapper;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
 import java.util.*;
 import java. net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -26,13 +29,17 @@ public class WeatherService {
     private String baseUrl;
 
     public List<Map<String, Object>> searchPlaces(String query) {
-        String formattedQuery = "name:^" + query;
-        String encodedQuery = URLEncoder.encode(formattedQuery, StandardCharsets. UTF_8);
-        String url = String. format("%s/places/search?query=%s&limit=5&client_id=%s&client_secret=%s",
-                baseUrl, encodedQuery, clientId, clientSecret);
+        URI uri = UriComponentsBuilder.fromHttpUrl(baseUrl)
+                .path("/places/search")
+                .queryParam("query", "name:^" + query)
+                .queryParam("limit", 5)
+                .queryParam("client_id", clientId)
+                .queryParam("client_secret", clientSecret)
+                .build()
+                .toUri();
 
         try {
-            String response = restTemplate.getForObject(url, String.class);
+            String response = restTemplate.getForObject(uri, String.class);
             return parseSearchResults(response);
         } catch (Exception e) {
             e.printStackTrace();
