@@ -28,7 +28,7 @@ public class WeatherService {
     public List<Map<String, Object>> searchPlaces(String query) {
         String formattedQuery = "name:^" + query;
         String encodedQuery = URLEncoder.encode(formattedQuery, StandardCharsets. UTF_8);
-        String url = String. format("%s/places/search? query=%s&limit=5&client_id=%s&client_secret=%s",
+        String url = String. format("%s/places/search?query=%s&limit=5&client_id=%s&client_secret=%s",
                 baseUrl, encodedQuery, clientId, clientSecret);
 
         try {
