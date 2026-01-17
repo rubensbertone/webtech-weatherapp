@@ -1,14 +1,14 @@
 package com.example.demo.service;
 
-import org.springframework.beans. factory.annotation.Autowired;
-import org.springframework.beans. factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web. client.RestTemplate;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson. databind.JsonNode;
+import com.fasterxml.jackson. databind.ObjectMapper;
 import java.util.*;
-import java.net.URLEncoder;
-import java. nio.charset.StandardCharsets;
+import java. net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class WeatherService {
@@ -16,23 +16,23 @@ public class WeatherService {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${xweather.client-id}")
+    @Value("${XWEATHER_CLIENT_ID}")
     private String clientId;
 
-    @Value("${xweather.client-secret}")
+    @Value("${XWEATHER_CLIENT_SECRET}")
     private String clientSecret;
 
-    @Value("${xweather.base-url}")
+    @Value("${XWEATHER_BASE_URL}")
     private String baseUrl;
 
     public List<Map<String, Object>> searchPlaces(String query) {
         String formattedQuery = "name:^" + query;
-        String encodedQuery = URLEncoder.encode(formattedQuery, StandardCharsets.UTF_8);
-        String url = String. format("%s/places/search?query=%s&limit=5&client_id=%s&client_secret=%s",
+        String encodedQuery = URLEncoder.encode(formattedQuery, StandardCharsets. UTF_8);
+        String url = String. format("%s/places/search? query=%s&limit=5&client_id=%s&client_secret=%s",
                 baseUrl, encodedQuery, clientId, clientSecret);
 
         try {
-            String response = restTemplate. getForObject(url, String. class);
+            String response = restTemplate.getForObject(url, String.class);
             return parseSearchResults(response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -49,20 +49,33 @@ public class WeatherService {
             }
 
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper. readTree(jsonResponse);
+            JsonNode root = mapper.readTree(jsonResponse);
+
+            if (!root.has("success") || !root.get("success").asBoolean()) {
+                return results;
+            }
 
             if (root.has("response") && root.get("response").isArray()) {
-                for (JsonNode item : root.get("response")) {
+                JsonNode responseArray = root.get("response");
+
+                for (JsonNode item : responseArray) {
                     Map<String, Object> placeInfo = new HashMap<>();
 
-                    if (item. has("place")) {
-                        JsonNode place = item.get("place");
-                        placeInfo.put("name", place.has("name") ? place.get("name").asText() : "");
-                        placeInfo.put("country", place.has("countryFull") ? place.get("countryFull").asText() : "");
-                        placeInfo.put("state", place.has("state") ? place.get("state").asText() : "");
+                    if (item.has("place")) {
+                        JsonNode place = item. get("place");
+
+                        String name = place.has("name") ? place.get("name").asText() : "";
+                        String country = place.has("countryFull") ? place.get("countryFull").asText() : "";
+                        String state = place.has("stateFull") && !place.get("stateFull").asText().isEmpty()
+                                ?  place.get("stateFull").asText()
+                                : null;
+
+                        placeInfo.put("name", name);
+                        placeInfo.put("country", country);
+                        placeInfo.put("state", state);
                     }
 
-                    if (item.has("loc")) {
+                    if (item. has("loc")) {
                         JsonNode loc = item.get("loc");
                         placeInfo.put("lat", loc.has("lat") ? loc.get("lat").asDouble() : null);
                         placeInfo.put("lon", loc.has("long") ? loc.get("long").asDouble() : null);
