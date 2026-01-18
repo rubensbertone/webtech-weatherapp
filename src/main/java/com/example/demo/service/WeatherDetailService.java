@@ -45,7 +45,7 @@ public class WeatherDetailService {
 
         try {
             String response = restTemplate.getForObject(url, String.class);
-            return parseConditions(response);
+            return parseConditions(response, units);
         } catch (Exception e) {
             logger.error("Fehler beim Abrufen der Conditions für {}, {}: {}", lat, lon, e.getMessage());
             return new HashMap<>();
@@ -58,7 +58,7 @@ public class WeatherDetailService {
 
         try {
             String response = restTemplate.getForObject(url, String.class);
-            return parseForecasts(response);
+            return parseForecasts(response, units);
         } catch (Exception e) {
             logger.error("Fehler beim Abrufen der Forecasts für {}, {}: {}", lat, lon, e.getMessage());
             return new ArrayList<>();
@@ -71,7 +71,7 @@ public class WeatherDetailService {
 
         try {
             String response = restTemplate.getForObject(url, String.class);
-            return parseHourlyForecasts(response);
+            return parseHourlyForecasts(response, units);
         } catch (Exception e) {
             logger.error("Fehler beim Abrufen der Hourly-Forecasts für {}, {}: {}", lat, lon, e.getMessage());
             return new ArrayList<>();
@@ -104,7 +104,7 @@ public class WeatherDetailService {
         }
     }
 
-    private Map<String, Object> parseConditions(String jsonResponse) {
+    private Map<String, Object> parseConditions(String jsonResponse, String units) {
         Map<String, Object> conditions = new HashMap<>();
         try {
             if (jsonResponse == null || jsonResponse.isBlank()) return conditions;
@@ -119,17 +119,25 @@ public class WeatherDetailService {
                 if (responseNode.has("periods") && responseNode.get("periods").isArray() && responseNode.get("periods").size() > 0) {
                     JsonNode currentData = responseNode.get("periods").get(0);
 
-                    conditions.put("temp", currentData.has("tempC") ? currentData.get("tempC").asDouble() :
-                            (currentData.has("tempF") ? currentData.get("tempF").asDouble() : null));
-                    conditions.put("feelsLike", currentData.has("feelslikeC") ? currentData.get("feelslikeC").asDouble() :
-                            (currentData.has("feelslikeF") ? currentData.get("feelslikeF").asDouble() : null));
+                    boolean isImperial = "e".equalsIgnoreCase(units);
+
+                    conditions.put("temp", isImperial && currentData.has("tempF") ? currentData.get("tempF").asDouble() :
+                            (currentData.has("tempC") ? currentData.get("tempC").asDouble() : null));
+                    
+                    conditions.put("feelsLike", isImperial && currentData.has("feelslikeF") ? currentData.get("feelslikeF").asDouble() :
+                            (currentData.has("feelslikeC") ? currentData.get("feelslikeC").asDouble() : null));
+                    
                     conditions.put("humidity", currentData.has("humidity") ? currentData.get("humidity").asInt() : null);
-                    conditions.put("windSpeed", currentData.has("windSpeedKPH") ? currentData.get("windSpeedKPH").asDouble() :
-                            (currentData.has("windSpeedMPH") ? currentData.get("windSpeedMPH").asDouble() : null));
+                    
+                    conditions.put("windSpeed", isImperial && currentData.has("windSpeedMPH") ? currentData.get("windSpeedMPH").asDouble() :
+                            (currentData.has("windSpeedKPH") ? currentData.get("windSpeedKPH").asDouble() : null));
+                    
                     conditions.put("windDirection", currentData.has("windDir") ? currentData.get("windDir").asText() : null);
                     conditions.put("pressure", currentData.has("pressureMB") ? currentData.get("pressureMB").asDouble() : null);
-                    conditions.put("visibility", currentData.has("visibilityKM") ? currentData.get("visibilityKM").asDouble() :
-                            (currentData.has("visibilityMI") ? currentData.get("visibilityMI").asDouble() : null));
+                    
+                    conditions.put("visibility", isImperial && currentData.has("visibilityMI") ? currentData.get("visibilityMI").asDouble() :
+                            (currentData.has("visibilityKM") ? currentData.get("visibilityKM").asDouble() : null));
+                    
                     conditions.put("uvIndex", currentData.has("uvi") ? currentData.get("uvi").asInt() : null);
                     conditions.put("cloudCover", currentData.has("sky") ? currentData.get("sky").asInt() : null);
                     conditions.put("description", currentData.has("weather") ? currentData.get("weather").asText() : null);
@@ -142,7 +150,7 @@ public class WeatherDetailService {
         return conditions;
     }
 
-    private List<Map<String, Object>> parseForecasts(String jsonResponse) {
+    private List<Map<String, Object>> parseForecasts(String jsonResponse, String units) {
         List<Map<String, Object>> forecasts = new ArrayList<>();
         try {
             if (jsonResponse == null || jsonResponse.isBlank()) return forecasts;
@@ -157,13 +165,18 @@ public class WeatherDetailService {
                 for (JsonNode item : responseArray) {
                     if (item.has("periods") && item.get("periods").isArray()) {
                         JsonNode periods = item.get("periods");
+                        boolean isImperial = "e".equalsIgnoreCase(units);
+
                         for (JsonNode period : periods) {
                             Map<String, Object> forecast = new HashMap<>();
                             forecast.put("timestamp", period.has("timestamp") ? period.get("timestamp").asLong() : null);
-                            forecast.put("tempMax", period.has("maxTempC") ? period.get("maxTempC").asDouble() :
-                                    (period.has("maxTempF") ? period.get("maxTempF").asDouble() : null));
-                            forecast.put("tempMin", period.has("minTempC") ? period.get("minTempC").asDouble() :
-                                    (period.has("minTempF") ? period.get("minTempF").asDouble() : null));
+                            
+                            forecast.put("tempMax", isImperial && period.has("maxTempF") ? period.get("maxTempF").asDouble() :
+                                    (period.has("maxTempC") ? period.get("maxTempC").asDouble() : null));
+                            
+                            forecast.put("tempMin", isImperial && period.has("minTempF") ? period.get("minTempF").asDouble() :
+                                    (period.has("minTempC") ? period.get("minTempC").asDouble() : null));
+                            
                             forecast.put("description", period.has("weather") ? period.get("weather").asText() : null);
                             forecast.put("icon", period.has("icon") ? period.get("icon").asText() : null);
                             forecasts.add(forecast);
@@ -177,7 +190,7 @@ public class WeatherDetailService {
         return forecasts;
     }
 
-    private List<Map<String, Object>> parseHourlyForecasts(String jsonResponse) {
+    private List<Map<String, Object>> parseHourlyForecasts(String jsonResponse, String units) {
         List<Map<String, Object>> hourlyForecasts = new ArrayList<>();
         try {
             if (jsonResponse == null || jsonResponse.isBlank()) return hourlyForecasts;
@@ -192,11 +205,15 @@ public class WeatherDetailService {
                 for (JsonNode item : responseArray) {
                     if (item.has("periods") && item.get("periods").isArray()) {
                         JsonNode periods = item.get("periods");
+                        boolean isImperial = "e".equalsIgnoreCase(units);
+
                         for (JsonNode period : periods) {
                             Map<String, Object> hourly = new HashMap<>();
                             hourly.put("timestamp", period.has("timestamp") ? period.get("timestamp").asLong() : null);
-                            hourly.put("temp", period.has("avgTempC") ? period.get("avgTempC").asDouble() :
-                                    (period.has("avgTempF") ? period.get("avgTempF").asDouble() : null));
+                            
+                            hourly.put("temp", isImperial && period.has("avgTempF") ? period.get("avgTempF").asDouble() :
+                                    (period.has("avgTempC") ? period.get("avgTempC").asDouble() : null));
+
                             hourly.put("icon", period.has("icon") ? period.get("icon").asText() : null);
                             hourlyForecasts.add(hourly);
                         }
