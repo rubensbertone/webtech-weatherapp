@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,8 +12,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.*;
-import java. net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @Service
 public class WeatherService {
@@ -28,6 +28,8 @@ public class WeatherService {
     @Value("${XWEATHER_BASE_URL}")
     private String baseUrl;
 
+    private static final Logger logger = LoggerFactory.getLogger(WeatherService.class);
+
     public List<Map<String, Object>> searchPlaces(String query) {
         URI uri = UriComponentsBuilder.fromHttpUrl(baseUrl)
                 .path("/places/search")
@@ -42,7 +44,7 @@ public class WeatherService {
             String response = restTemplate.getForObject(uri, String.class);
             return parseSearchResults(response);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler bei der Ortssuche für '{}': {}", query, e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -92,7 +94,7 @@ public class WeatherService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Parsen der Suchergebnisse: {}", e.getMessage());
         }
 
         return results;

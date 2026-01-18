@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ public class WeatherDetailService {
     @Value("${XWEATHER_BASE_URL}")
     private String baseUrl;
 
+    private static final Logger logger = LoggerFactory.getLogger(WeatherDetailService.class);
+
     public Map<String, Object> fetchAllWeatherData(double lat, double lon) {
         Map<String, Object> result = new HashMap<>();
 
@@ -43,7 +47,7 @@ public class WeatherDetailService {
             String response = restTemplate.getForObject(url, String.class);
             return parseConditions(response);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Abrufen der Conditions für {}, {}: {}", lat, lon, e.getMessage());
             return new HashMap<>();
         }
     }
@@ -56,7 +60,7 @@ public class WeatherDetailService {
             String response = restTemplate.getForObject(url, String.class);
             return parseForecasts(response);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Abrufen der Forecasts für {}, {}: {}", lat, lon, e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -69,7 +73,7 @@ public class WeatherDetailService {
             String response = restTemplate.getForObject(url, String.class);
             return parseHourlyForecasts(response);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Abrufen der Hourly-Forecasts für {}, {}: {}", lat, lon, e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -82,7 +86,7 @@ public class WeatherDetailService {
             String response = restTemplate.getForObject(url, String.class);
             return parseAirQuality(response);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Abrufen der AirQuality für {}, {}: {}", lat, lon, e.getMessage());
             return new HashMap<>();
         }
     }
@@ -95,7 +99,7 @@ public class WeatherDetailService {
             String response = restTemplate.getForObject(url, String.class);
             return parseAlerts(response);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Abrufen der Alerts für {}, {}: {}", lat, lon, e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -129,7 +133,7 @@ public class WeatherDetailService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Parsen der Conditions: {}", e.getMessage());
         }
         return conditions;
     }
@@ -171,7 +175,7 @@ public class WeatherDetailService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Parsen der Forecasts: {}", e.getMessage());
         }
 
         return forecasts;
@@ -212,7 +216,7 @@ public class WeatherDetailService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Parsen der Hourly-Forecasts: {}", e.getMessage());
         }
 
         return hourlyForecasts;
@@ -261,7 +265,7 @@ public class WeatherDetailService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Parsen der AirQuality: {}", e.getMessage());
         }
 
         return airQuality;
@@ -299,7 +303,7 @@ public class WeatherDetailService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Fehler beim Parsen der Alerts: {}", e.getMessage());
         }
 
         return alerts;
