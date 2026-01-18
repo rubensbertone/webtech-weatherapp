@@ -35,4 +35,19 @@ public class FavoriteLocationController {
         location.setAppUser(user);
         return favoriteLocationRepository.save(location);
     }
+
+    @DeleteMapping
+    public void deleteFavorite(
+            @RequestParam double latitude,
+            @RequestParam double longitude,
+            Authentication authentication) {
+        
+        String username = authentication.getName();
+        
+        FavoriteLocation location = favoriteLocationRepository
+                .findByAppUserUsernameAndLatitudeAndLongitude(username, latitude, longitude)
+                .orElseThrow(() -> new RuntimeException("Location not found"));
+
+        favoriteLocationRepository.delete(location);
+    }
 }
