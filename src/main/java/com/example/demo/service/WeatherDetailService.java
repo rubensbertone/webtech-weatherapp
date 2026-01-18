@@ -36,7 +36,7 @@ public class WeatherDetailService {
     }
 
     private Map<String, Object> fetchConditions(double lat, double lon) {
-        String url = String.format("%s/conditions/%s,%s? client_id=%s&client_secret=%s",
+        String url = String.format("%s/conditions/%s,%s?units=m&client_id=%s&client_secret=%s",
                 baseUrl, lat, lon, clientId, clientSecret);
 
         try {
@@ -49,7 +49,7 @@ public class WeatherDetailService {
     }
 
     private List<Map<String, Object>> fetchForecasts(double lat, double lon) {
-        String url = String.format("%s/forecasts/%s,%s? filter=day&limit=5&client_id=%s&client_secret=%s",
+        String url = String.format("%s/forecasts/%s,%s?filter=day&limit=5&units=m&client_id=%s&client_secret=%s",
                 baseUrl, lat, lon, clientId, clientSecret);
 
         try {
@@ -62,7 +62,7 @@ public class WeatherDetailService {
     }
 
     private List<Map<String, Object>> fetchHourlyForecasts(double lat, double lon) {
-        String url = String.format("%s/forecasts/%s,%s?filter=1hr&limit=6&client_id=%s&client_secret=%s",
+        String url = String.format("%s/forecasts/%s,%s?filter=1hr&limit=6&units=m&client_id=%s&client_secret=%s",
                 baseUrl, lat, lon, clientId, clientSecret);
 
         try {
@@ -102,40 +102,35 @@ public class WeatherDetailService {
 
     private Map<String, Object> parseConditions(String jsonResponse) {
         Map<String, Object> conditions = new HashMap<>();
-
         try {
-            if (jsonResponse == null || jsonResponse.isBlank()) {
-                return conditions;
-            }
+            if (jsonResponse == null || jsonResponse.isBlank()) return conditions;
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(jsonResponse);
 
-            if (! root.has("success") || !root.get("success").asBoolean()) {
-                return conditions;
-            }
+            if (!root.has("success") || !root.get("success").asBoolean()) return conditions;
 
             if (root.has("response") && root.get("response").isArray() && root.get("response").size() > 0) {
-                JsonNode ob = root.get("response").get(0).get("ob");
+                JsonNode responseNode = root.get("response").get(0);
+                if (responseNode.has("periods") && responseNode.get("periods").isArray() && responseNode.get("periods").size() > 0) {
+                    JsonNode currentData = responseNode.get("periods").get(0);
 
-                if (ob != null) {
-                    conditions.put("temp", ob.has("tempC") ? ob.get("tempC").asDouble() : null);
-                    conditions.put("feelsLike", ob.has("feelslikeC") ? ob.get("feelslikeC").asDouble() : null);
-                    conditions.put("humidity", ob.has("humidity") ? ob.get("humidity").asInt() : null);
-                    conditions.put("windSpeed", ob.has("windKPH") ? ob.get("windKPH").asDouble() : null);
-                    conditions.put("windDirection", ob.has("windDir") ? ob.get("windDir").asText() : null);
-                    conditions.put("pressure", ob.has("pressureMB") ? ob.get("pressureMB").asDouble() : null);
-                    conditions. put("visibility", ob.has("visibilityKM") ? ob.get("visibilityKM").asDouble() : null);
-                    conditions. put("uvIndex", ob.has("uvi") ? ob.get("uvi").asInt() : null);
-                    conditions.put("cloudCover", ob.has("sky") ? ob.get("sky").asInt() : null);
-                    conditions.put("description", ob.has("weather") ? ob.get("weather").asText() : null);
-                    conditions.put("icon", ob.has("icon") ? ob.get("icon").asText() : null);
+                    conditions.put("temp", currentData.has("tempC") ? currentData.get("tempC").asDouble() : null);
+                    conditions.put("feelsLike", currentData.has("feelslikeC") ? currentData.get("feelslikeC").asDouble() : null);
+                    conditions.put("humidity", currentData.has("humidity") ? currentData.get("humidity").asInt() : null);
+                    conditions.put("windSpeed", currentData.has("windSpeedKPH") ? currentData.get("windSpeedKPH").asDouble() : null);
+                    conditions.put("windDirection", currentData.has("windDir") ? currentData.get("windDir").asText() : null);
+                    conditions.put("pressure", currentData.has("pressureMB") ? currentData.get("pressureMB").asDouble() : null);
+                    conditions.put("visibility", currentData.has("visibilityKM") ? currentData.get("visibilityKM").asDouble() : null);
+                    conditions.put("uvIndex", currentData.has("uvi") ? currentData.get("uvi").asInt() : null);
+                    conditions.put("cloudCover", currentData.has("sky") ? currentData.get("sky").asInt() : null);
+                    conditions.put("description", currentData.has("weather") ? currentData.get("weather").asText() : null);
+                    conditions.put("icon", currentData.has("icon") ? currentData.get("icon").asText() : null);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return conditions;
     }
 
