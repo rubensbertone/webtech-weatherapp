@@ -27,21 +27,21 @@ public class WeatherDetailService {
 
     private static final Logger logger = LoggerFactory.getLogger(WeatherDetailService.class);
 
-    public Map<String, Object> fetchAllWeatherData(double lat, double lon) {
+    public Map<String, Object> fetchAllWeatherData(double lat, double lon, String units) {
         Map<String, Object> result = new HashMap<>();
 
-        result.put("current", fetchConditions(lat, lon));
-        result.put("forecast", fetchForecasts(lat, lon));
-        result.put("hourly", fetchHourlyForecasts(lat, lon));
+        result.put("current", fetchConditions(lat, lon, units));
+        result.put("forecast", fetchForecasts(lat, lon, units));
+        result.put("hourly", fetchHourlyForecasts(lat, lon, units));
         result.put("airQuality", fetchAirQuality(lat, lon));
         result.put("alerts", fetchAlerts(lat, lon));
 
         return result;
     }
 
-    private Map<String, Object> fetchConditions(double lat, double lon) {
-        String url = String.format("%s/conditions/%s,%s?units=m&client_id=%s&client_secret=%s",
-                baseUrl, lat, lon, clientId, clientSecret);
+    private Map<String, Object> fetchConditions(double lat, double lon, String units) {
+        String url = String.format("%s/conditions/%s,%s?units=%s&client_id=%s&client_secret=%s",
+                baseUrl, lat, lon, units, clientId, clientSecret);
 
         try {
             String response = restTemplate.getForObject(url, String.class);
@@ -52,9 +52,9 @@ public class WeatherDetailService {
         }
     }
 
-    private List<Map<String, Object>> fetchForecasts(double lat, double lon) {
-        String url = String.format("%s/forecasts/%s,%s?filter=day&limit=5&units=m&client_id=%s&client_secret=%s",
-                baseUrl, lat, lon, clientId, clientSecret);
+    private List<Map<String, Object>> fetchForecasts(double lat, double lon, String units) {
+        String url = String.format("%s/forecasts/%s,%s?filter=day&limit=5&units=%s&client_id=%s&client_secret=%s",
+                baseUrl, lat, lon, units, clientId, clientSecret);
 
         try {
             String response = restTemplate.getForObject(url, String.class);
@@ -65,9 +65,9 @@ public class WeatherDetailService {
         }
     }
 
-    private List<Map<String, Object>> fetchHourlyForecasts(double lat, double lon) {
-        String url = String.format("%s/forecasts/%s,%s?filter=1hr&limit=6&units=m&client_id=%s&client_secret=%s",
-                baseUrl, lat, lon, clientId, clientSecret);
+    private List<Map<String, Object>> fetchHourlyForecasts(double lat, double lon, String units) {
+        String url = String.format("%s/forecasts/%s,%s?filter=1hr&limit=6&units=%s&client_id=%s&client_secret=%s",
+                baseUrl, lat, lon, units, clientId, clientSecret);
 
         try {
             String response = restTemplate.getForObject(url, String.class);
@@ -119,13 +119,17 @@ public class WeatherDetailService {
                 if (responseNode.has("periods") && responseNode.get("periods").isArray() && responseNode.get("periods").size() > 0) {
                     JsonNode currentData = responseNode.get("periods").get(0);
 
-                    conditions.put("temp", currentData.has("tempC") ? currentData.get("tempC").asDouble() : null);
-                    conditions.put("feelsLike", currentData.has("feelslikeC") ? currentData.get("feelslikeC").asDouble() : null);
+                    conditions.put("temp", currentData.has("tempC") ? currentData.get("tempC").asDouble() :
+                            (currentData.has("tempF") ? currentData.get("tempF").asDouble() : null));
+                    conditions.put("feelsLike", currentData.has("feelslikeC") ? currentData.get("feelslikeC").asDouble() :
+                            (currentData.has("feelslikeF") ? currentData.get("feelslikeF").asDouble() : null));
                     conditions.put("humidity", currentData.has("humidity") ? currentData.get("humidity").asInt() : null);
-                    conditions.put("windSpeed", currentData.has("windSpeedKPH") ? currentData.get("windSpeedKPH").asDouble() : null);
+                    conditions.put("windSpeed", currentData.has("windSpeedKPH") ? currentData.get("windSpeedKPH").asDouble() :
+                            (currentData.has("windSpeedMPH") ? currentData.get("windSpeedMPH").asDouble() : null));
                     conditions.put("windDirection", currentData.has("windDir") ? currentData.get("windDir").asText() : null);
                     conditions.put("pressure", currentData.has("pressureMB") ? currentData.get("pressureMB").asDouble() : null);
-                    conditions.put("visibility", currentData.has("visibilityKM") ? currentData.get("visibilityKM").asDouble() : null);
+                    conditions.put("visibility", currentData.has("visibilityKM") ? currentData.get("visibilityKM").asDouble() :
+                            (currentData.has("visibilityMI") ? currentData.get("visibilityMI").asDouble() : null));
                     conditions.put("uvIndex", currentData.has("uvi") ? currentData.get("uvi").asInt() : null);
                     conditions.put("cloudCover", currentData.has("sky") ? currentData.get("sky").asInt() : null);
                     conditions.put("description", currentData.has("weather") ? currentData.get("weather").asText() : null);
@@ -140,35 +144,28 @@ public class WeatherDetailService {
 
     private List<Map<String, Object>> parseForecasts(String jsonResponse) {
         List<Map<String, Object>> forecasts = new ArrayList<>();
-
         try {
-            if (jsonResponse == null || jsonResponse.isBlank()) {
-                return forecasts;
-            }
+            if (jsonResponse == null || jsonResponse.isBlank()) return forecasts;
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(jsonResponse);
 
-            if (!root.has("success") || !root.get("success").asBoolean()) {
-                return forecasts;
-            }
+            if (!root.has("success") || !root.get("success").asBoolean()) return forecasts;
 
             if (root.has("response") && root.get("response").isArray()) {
                 JsonNode responseArray = root.get("response");
-
                 for (JsonNode item : responseArray) {
                     if (item.has("periods") && item.get("periods").isArray()) {
                         JsonNode periods = item.get("periods");
-
                         for (JsonNode period : periods) {
                             Map<String, Object> forecast = new HashMap<>();
-
                             forecast.put("timestamp", period.has("timestamp") ? period.get("timestamp").asLong() : null);
-                            forecast.put("tempMax", period.has("maxTempC") ? period.get("maxTempC").asDouble() : null);
-                            forecast.put("tempMin", period. has("minTempC") ? period.get("minTempC").asDouble() : null);
+                            forecast.put("tempMax", period.has("maxTempC") ? period.get("maxTempC").asDouble() :
+                                    (period.has("maxTempF") ? period.get("maxTempF").asDouble() : null));
+                            forecast.put("tempMin", period.has("minTempC") ? period.get("minTempC").asDouble() :
+                                    (period.has("minTempF") ? period.get("minTempF").asDouble() : null));
                             forecast.put("description", period.has("weather") ? period.get("weather").asText() : null);
                             forecast.put("icon", period.has("icon") ? period.get("icon").asText() : null);
-
                             forecasts.add(forecast);
                         }
                     }
@@ -177,40 +174,31 @@ public class WeatherDetailService {
         } catch (Exception e) {
             logger.error("Fehler beim Parsen der Forecasts: {}", e.getMessage());
         }
-
         return forecasts;
     }
 
     private List<Map<String, Object>> parseHourlyForecasts(String jsonResponse) {
         List<Map<String, Object>> hourlyForecasts = new ArrayList<>();
-
         try {
-            if (jsonResponse == null || jsonResponse.isBlank()) {
-                return hourlyForecasts;
-            }
+            if (jsonResponse == null || jsonResponse.isBlank()) return hourlyForecasts;
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(jsonResponse);
 
-            if (!root.has("success") || !root.get("success").asBoolean()) {
-                return hourlyForecasts;
-            }
+            if (!root.has("success") || !root.get("success").asBoolean()) return hourlyForecasts;
 
             if (root.has("response") && root.get("response").isArray()) {
                 JsonNode responseArray = root.get("response");
-
                 for (JsonNode item : responseArray) {
                     if (item.has("periods") && item.get("periods").isArray()) {
                         JsonNode periods = item.get("periods");
-
                         for (JsonNode period : periods) {
                             Map<String, Object> hourly = new HashMap<>();
-
                             hourly.put("timestamp", period.has("timestamp") ? period.get("timestamp").asLong() : null);
-                            hourly.put("temp", period.has("avgTempC") ? period.get("avgTempC").asDouble() : null);
+                            hourly.put("temp", period.has("avgTempC") ? period.get("avgTempC").asDouble() :
+                                    (period.has("avgTempF") ? period.get("avgTempF").asDouble() : null));
                             hourly.put("icon", period.has("icon") ? period.get("icon").asText() : null);
-
-                            hourlyForecasts. add(hourly);
+                            hourlyForecasts.add(hourly);
                         }
                     }
                 }
@@ -218,38 +206,29 @@ public class WeatherDetailService {
         } catch (Exception e) {
             logger.error("Fehler beim Parsen der Hourly-Forecasts: {}", e.getMessage());
         }
-
         return hourlyForecasts;
     }
 
     private Map<String, Object> parseAirQuality(String jsonResponse) {
         Map<String, Object> airQuality = new HashMap<>();
-
         try {
-            if (jsonResponse == null || jsonResponse. isBlank()) {
-                return airQuality;
-            }
+            if (jsonResponse == null || jsonResponse.isBlank()) return airQuality;
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(jsonResponse);
 
-            if (!root.has("success") || !root.get("success").asBoolean()) {
-                return airQuality;
-            }
+            if (!root.has("success") || !root.get("success").asBoolean()) return airQuality;
 
             if (root.has("response") && root.get("response").isArray() && root.get("response").size() > 0) {
                 JsonNode periods = root.get("response").get(0).get("periods");
-
                 if (periods != null && periods.isArray() && periods.size() > 0) {
                     JsonNode latest = periods.get(0);
-
                     airQuality.put("aqi", latest.has("aqi") ? latest.get("aqi").asInt() : null);
                     airQuality.put("category", latest.has("category") ? latest.get("category").asText() : null);
 
                     if (latest.has("pollutants")) {
                         JsonNode pollutants = latest.get("pollutants");
-
-                        if (pollutants. has("pm2p5")) {
+                        if (pollutants.has("pm2p5")) {
                             airQuality.put("pm25", pollutants.get("pm2p5").get("valueMG").asDouble());
                         }
                         if (pollutants.has("pm10")) {
@@ -258,7 +237,7 @@ public class WeatherDetailService {
                         if (pollutants.has("o3")) {
                             airQuality.put("o3", pollutants.get("o3").get("valueMG").asDouble());
                         }
-                        if (pollutants. has("no2")) {
+                        if (pollutants.has("no2")) {
                             airQuality.put("no2", pollutants.get("no2").get("valueMG").asDouble());
                         }
                     }
@@ -267,37 +246,28 @@ public class WeatherDetailService {
         } catch (Exception e) {
             logger.error("Fehler beim Parsen der AirQuality: {}", e.getMessage());
         }
-
         return airQuality;
     }
 
     private List<Map<String, Object>> parseAlerts(String jsonResponse) {
         List<Map<String, Object>> alerts = new ArrayList<>();
-
         try {
-            if (jsonResponse == null || jsonResponse.isBlank()) {
-                return alerts;
-            }
+            if (jsonResponse == null || jsonResponse.isBlank()) return alerts;
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(jsonResponse);
 
-            if (!root. has("success") || !root.get("success").asBoolean()) {
-                return alerts;
-            }
+            if (!root.has("success") || !root.get("success").asBoolean()) return alerts;
 
             if (root.has("response") && root.get("response").isArray()) {
                 JsonNode responseArray = root.get("response");
-
                 for (JsonNode item : responseArray) {
-                    if (item. has("details")) {
+                    if (item.has("details")) {
                         JsonNode details = item.get("details");
-
                         Map<String, Object> alert = new HashMap<>();
                         alert.put("type", details.has("type") ? details.get("type").asText() : null);
                         alert.put("message", details.has("body") ? details.get("body").asText() : null);
                         alert.put("severity", details.has("priority") ? details.get("priority").asText() : null);
-
                         alerts.add(alert);
                     }
                 }
@@ -305,7 +275,6 @@ public class WeatherDetailService {
         } catch (Exception e) {
             logger.error("Fehler beim Parsen der Alerts: {}", e.getMessage());
         }
-
         return alerts;
     }
 }

@@ -19,26 +19,16 @@ import static org.mockito.Mockito.when;
 /**
  * Testklasse für den {@link WeatherDetailService}.
  * Diese Suite überprüft die Aggregation und das korrekte Parsing verschiedener Wetterdaten-Komponenten
- * (Aktuelle Bedingungen, Vorhersagen, Luftqualität und Warnungen) von der Xweather API.
+ * unter Berücksichtigung des neuen Einheiten-Parameters (units).
  */
 class WeatherDetailServiceTest {
 
-    /**
-     * Mock-Objekt für das RestTemplate, um externe API-Aufrufe zu simulieren.
-     */
     @Mock
     private RestTemplate restTemplate;
 
-    /**
-     * Die zu testende Instanz des WeatherDetailService, in die die Mocks injiziert werden.
-     */
     @InjectMocks
     private WeatherDetailService weatherDetailService;
 
-    /**
-     * Initialisiert die Mockito-Annotationen und setzt die erforderlichen API-Konfigurationswerte
-     * via Reflection vor jedem Testlauf.
-     */
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -49,16 +39,15 @@ class WeatherDetailServiceTest {
 
     /**
      * @test Vollständigkeit der Datenstruktur
-     * @description Überprüft, ob die Methode fetchAllWeatherData eine Map zurückgibt,
-     * die alle erwarteten Wetter-Komponenten als Schlüssel enthält.
+     * @description Prüft, ob alle Komponenten-Keys vorhanden sind, wenn die Methode mit 3 Parametern aufgerufen wird.
      */
     @Test
     void fetchAllWeatherData_shouldReturnAllComponents() {
         // Arrange
         when(restTemplate.getForObject(anyString(), eq(String.class))).thenReturn("{}");
 
-        // Act
-        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405);
+        // Act - Jetzt mit 3 Argumenten (lat, lon, units)
+        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405, "m");
 
         // Assert
         assertNotNull(result);
@@ -71,8 +60,7 @@ class WeatherDetailServiceTest {
 
     /**
      * @test Parsing der aktuellen Wetterbedingungen
-     * @description Validiert, ob die JSON-Antwort der Conditions-API korrekt in die
-     * interne Map-Struktur für aktuelle Daten (Temperatur, Feuchtigkeit, Beschreibung) überführt wird.
+     * @description Prüft das korrekte Mapping der Temperatur- und Feuchtigkeitswerte.
      */
     @Test
     void fetchAllWeatherData_shouldParseCurrentConditionsCorrectly() {
@@ -86,8 +74,8 @@ class WeatherDetailServiceTest {
             return "{}";
         });
 
-        // Act
-        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405);
+        // Act - units="m" übergeben
+        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405, "m");
         Map<String, Object> current = (Map<String, Object>) result.get("current");
 
         // Assert
@@ -99,8 +87,6 @@ class WeatherDetailServiceTest {
 
     /**
      * @test Parsing der Wettervorhersage
-     * @description Überprüft, ob die täglichen Vorhersagedaten (Zeitstempel, Max/Min Temperaturen)
-     * korrekt aus der API-Antwort extrahiert und in die Liste der Vorhersagen gemappt werden.
      */
     @Test
     void fetchAllWeatherData_shouldParseForecastsCorrectly() {
@@ -115,7 +101,7 @@ class WeatherDetailServiceTest {
         });
 
         // Act
-        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405);
+        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405, "m");
         List<Map<String, Object>> forecast = (List<Map<String, Object>>) result.get("forecast");
 
         // Assert
@@ -127,8 +113,6 @@ class WeatherDetailServiceTest {
 
     /**
      * @test Parsing der Luftqualität
-     * @description Validiert das Mapping der Luftqualitätsdaten (AQI und Kategorie)
-     * aus dem entsprechenden API-Endpunkt.
      */
     @Test
     void fetchAllWeatherData_shouldParseAirQualityCorrectly() {
@@ -143,7 +127,7 @@ class WeatherDetailServiceTest {
         });
 
         // Act
-        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405);
+        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405, "m");
         Map<String, Object> airQuality = (Map<String, Object>) result.get("airQuality");
 
         // Assert
@@ -154,9 +138,6 @@ class WeatherDetailServiceTest {
 
     /**
      * @test Fehlerbehandlung bei API-Ausfällen
-     * @description Stellt sicher, dass der Service robust auf API-Fehler reagiert.
-     * Bei einer Exception während des Aufrufs müssen leere Kollektionen zurückgegeben werden,
-     * um Systemabstürze zu vermeiden.
      */
     @Test
     void fetchAllWeatherData_shouldHandleApiErrorsGracefully() {
@@ -164,7 +145,7 @@ class WeatherDetailServiceTest {
         when(restTemplate.getForObject(anyString(), eq(String.class))).thenThrow(new RuntimeException("API Error"));
 
         // Act
-        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405);
+        Map<String, Object> result = weatherDetailService.fetchAllWeatherData(52.52, 13.405, "m");
 
         // Assert
         assertNotNull(result);

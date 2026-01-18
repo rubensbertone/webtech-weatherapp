@@ -17,9 +17,10 @@ public class WeatherDetailController {
     @GetMapping("/details")
     public ResponseEntity<Map<String, Object>> getWeatherDetails(
             @RequestParam double lat,
-            @RequestParam double lon) {
+            @RequestParam double lon,
+            @RequestParam(defaultValue = "m") String units) {
 
-        Map<String, Object> weatherData = weatherDetailService.fetchAllWeatherData(lat, lon);
+        Map<String, Object> weatherData = weatherDetailService.fetchAllWeatherData(lat, lon, units);
         return ResponseEntity.ok(weatherData);
     }
 }
